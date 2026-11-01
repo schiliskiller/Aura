@@ -1,0 +1,41 @@
+PARSER_BEGIN(AuraParser)
+public class AuraParser
+{
+    public static void main(String[] args) throws ParseException
+    {
+
+    }
+}
+PARSER_END(AuraParser)
+
+TOKEN: {
+    < OPER: "operacion" > |
+    < FIN:  "fin"       > |
+    < USAR: "usar"      > |
+    < ENTR: "entrada"   > |
+    < CLAV: "clave"     > |
+    < SALI: "salida"    > |
+    < ALGR: "algoritmo" >
+}
+
+SPECIAL_TOKEN: {
+    < COMM_LN: "//" (~["\n","\r"])*("\n"|"\r"|"\r\n"|"\n\r") > |
+    < COMM_:  >
+}
+
+void Init(): {}
+{
+    
+}
+
+void Usar(): {Token t;}
+{
+    t=<USAR> Func() {
+        System.out.println("Operacion usada: " + t.image);
+    }
+}
+
+void Func(): {Token t;}
+{
+    <OPER>
+}
