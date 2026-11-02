@@ -1,3 +1,10 @@
+/* AURA v1.0 
+* lenguaje creado por Martha Denisse Lara Xocuis y Alan Martínez Schleske 2026
+* se ocupó de guía el Manual_analisis_lexico.pdf proporcionado por la docente y la documentación oficial de javaCC
+* EE: Lenguajes Formales y Compiladores
+*/
+
+// aquí comienza el PARSER
 PARSER_BEGIN(AuraParser)
 public class AuraParser
 {
@@ -6,32 +13,54 @@ public class AuraParser
 
     }
 }
+
 PARSER_END(AuraParser)
+//termino de PARSER
+
+/* comienzo de análisis léxico */
+//bloque SKIP, se ignoran espacios, tabuladores y retornos
+SKIP: { " " | "\t" | "\r" }
+
+// palabras reservadas
+
+// javacc asigna la prioridad según el orden de aparición en el archivo, además, las etiquetas de los tokens deben seguir las reglas de identificadores (comenzar con una letra o un guión bajo)
 
 TOKEN: {
     // palabras reservadas
-    < OPER: "operacion" > |
-    < FIN:  "fin"       > |
-    < USAR: "usar"      > |
-    < ENTR: "entrada"   > |
-    < CLAV: "clave"     > |
-    < SALI: "salida"    > |
-    < ALGR: "algoritmo" > |
-    < GUAR: "guardar"   > |
-    < IMPR: "imprimir"  > |
-    // reemplaza el punto y coma para facilidad de codificacion
-    < NEWL: "\n"        > |
+    < OPER: "operacion" >
+|   < FIN:  "fin"       >
+|   < USAR: "usar"      >
+|   < ENTR: "entrada"   >
+|   < CLAV: "clave"     >
+|   < SALI: "salida"    >
+|   < ALG: "algoritmo" >
+|   < GUAR: "guardar"   >
+|   < IMPR: "imprimir"  >
+|   < EN: "en"  >
+|   < ARCH: "archivo"  >
+|   < CIFR: "cifrar" >
+|   < DESC: "descifrar" >
+
+    // nombres de algoritmos
+|   < AES: "AES" >
+|   < DES: "DES" >
+|   < T3DES: "3DES" >
+|   < CHACHA20: "ChaCha20" >
+|   < BLOWFISH: "Blowfish" >
+
+    // delimitador principal que reemplaza el punto y coma para facilidad de codificacion para las personas en situación de discapacidad
+|   < NEWL: "\n"        > 
+
     // nombre de identificador o funcion
-    < ID:   (["a"-"z", "A"-"Z", "_"])(["a"-"z", "A"-"Z", "_", "0"-"9"])* >
+|   < ID:   (["a"-"z", "A"-"Z", "_"])(["a"-"z", "A"-"Z", "_", "0"-"9"])* >
 }
 
+// reconocer los comentarios de línea que inician con ; 
 SPECIAL_TOKEN: {
-    // comentario de linea
     < COMM_LIN: ";" (~["\n","\r"])*("\n"|"\r"|"\r\n"|"\n\r") >
 }
 
-// excluye caracteres especificos al compilar
-SKIP: { " " | "\t" }
+/*análisis sintáctico */
 
 void Init(): {}
 {
