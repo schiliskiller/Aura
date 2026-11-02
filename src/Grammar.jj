@@ -11,9 +11,15 @@ https://javacc.github.io/javacc/tutorials/examples.html
 https://cs.lmu.edu/~ray/notes/javacc/
 https://javacc.github.io/javacc/tutorials/examples.html#javacc-example-1
 https://github.com/javacc/javacc/blob/master/docs/tutorials/index.md
+https://javacc.github.io/javacc/documentation/grammar.html
 */
 
-// aqui comienza el PARSER
+options{
+  IGNORE_CASE = true; // para que no importe mayusculas o min
+  STATIC = false; // instanciar el parser con new AuraParser
+}
+
+/* -------- aqui comienza el PARSER */
 PARSER_BEGIN(AuraParser)
 import java.io.*; // para manejar i/o y archivos
 
@@ -23,10 +29,25 @@ public class AuraParser
     {
       try
       {
-        AuraParser parser = new AuraParser(System.in);
-        parser.Input();
-      }
+        System.out.println("Aura v1.0");
+        System.out.println("Leyendo codigo fuente...");
+        
 
+        AuraParser parser = new AuraParser(System.in);
+        parser.Init(); // evaluación sintactica
+
+        System.out.println("Se compilo de forma exitosa sin ningun error :D"); 
+        
+        
+      }
+      catch (ParseException e)
+      {
+        System.out.println("Error Sintactico:" + e.getMessage());
+      }
+      catch (TokenMgrError e)
+      {
+        System.out.println("Error Lexico:" + e.getMessage()); 
+      }
 
     }
 }
@@ -35,10 +56,6 @@ PARSER_END(AuraParser)
 //termino de PARSER
 
 /* comienzo de analisis lexico */
-options{
-  IGNORE_CASE = true; // para que no importe mayusculas o min
-  STATIC = false; // tablas son atributos del parser
-}
 
 //bloque SKIP, se ignoran espacios, tabuladores y retornos
 SKIP: { " " | "\t" | "\r" }
@@ -79,8 +96,6 @@ TOKEN: {
 |   < AES128: "aes128"                    >
 |   < AES256: "aes256"                    >
 |   < CHACHA: "chacha20"                  >
-
-    // si es que se va a usar en un ctf
 |   < CESAR : "cesar"                     >
 |   < VIGNR : "vigenere"                  >
 |   < XOR   : "xor"                       >
@@ -102,23 +117,62 @@ SPECIAL_TOKEN: {
     < COMM_LIN : ";" (~["\n","\r"])*      >   // ya no se come el salto de linea
 }
 
-/*analisis sintactico */
+/*---------------- analisis sintactico */
 
-// declaraciones de variables locales en java
+// procesar instrucciones hasta llegar al final del archivo(EOF)
 void Init(): {}
 {
-    ""
+    ( Sentencia() )* <EOF>
 }
 
-void Usar(): {Token t;}
+void Sentencia(): {}
 {
-    t=<USAR> Func() {
-        System.out.println("Operacion usada: " + t.image);
-    }
+    BloqueCifrado() // reconocer bloques de cifrado
+  | BloqueDescifrado() // -- bloques de descifrado
+  | ComandoImprimir()
+  | ComandoGuardar()
+  | <NEWL>
 }
 
-// aqui se determina el algoritmo de encriptacion (AES, DES, 3DES, ChaCha20, etc.)
-void Func(): {Token t;}
+// reconocer bloques de cifrado tipo cif aes256 y asi
+void BloqueCifrado(): {}
 {
-    <OPER>
+  <CIFR> Algoritmo() <NEWL>
+  ( ParametroCifrado() )*
+  <FIN> (<CIFR>)? (<NEWL>)?
+}
+
+// reconocer bloques de descifrado tipo dcif aes256
+void BloqueDescifrado(): {}
+{
+  <DESC> Algoritmo() <NEWL>
+  ( ParametroCifrado() )*
+  <FIN> (<DESC>)? (<NEWL>)?
+}
+
+//reconocer el algoritmo seleccionado
+void Algoritmo(): {}
+{
+  <AES128> | <AES256> | <CHACHA> | <CESAR> | <VIGNR> | <XOR> | <BASE64> | <ID>
+}
+
+// notacion por palabras(texto, clave, resultado) como notacion matematica (m,k,c)
+void ParametroCifrado(): {}
+{
+     ( <TEXTO> | <LET_M> ) ( <STRING> | <ID> ) ( <NEWL> )?
+  |  ( <CLAV>  | <LET_K> ) ( <STRING> | <ID> ) ( <NEWL> )?
+  |  ( <RESUL> | <LET_C> ) <ID> ( <NEWL> )?
+  |  <NEWL>
+}
+
+// enviar a pantalla o lector de voz
+void ComandoImprimir(): {}
+{
+  <IMPR> ( <ID> | <STRING> ) (<NEWL>)?
+}
+
+// guardar resultado en un archivo
+void ComandoGuardar(): {}
+{
+  <GUAR> ( <ID> | <STRING> ) ( <EN> <ARCH> )? ( <STRING> | <ID> )? (<NEWL>)?
 }
