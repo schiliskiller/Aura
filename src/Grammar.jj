@@ -1,15 +1,32 @@
 /* AURA v1.0 
-* lenguaje creado por Martha Denisse Lara Xocuis y Alan Martínez Schleske 2026
-* se ocupó de guía el Manual_analisis_lexico.pdf proporcionado por la docente y la documentación oficial de javaCC
+* lenguaje creado por Martha Denisse Lara Xocuis y Alan Martinez Schleske 2026
+* se ocupo de guia el Manual_analisis_lexico.pdf, materiales proporcionados por la docente y la documentacion oficial de javaCC
 * EE: Lenguajes Formales y Compiladores
 */
 
-// aquí comienza el PARSER
+
+/*
+otras referencias:
+https://javacc.github.io/javacc/tutorials/examples.html
+https://cs.lmu.edu/~ray/notes/javacc/
+https://javacc.github.io/javacc/tutorials/examples.html#javacc-example-1
+https://github.com/javacc/javacc/blob/master/docs/tutorials/index.md
+*/
+
+// aqui comienza el PARSER
 PARSER_BEGIN(AuraParser)
+import java.io.*; // para manejar i/o y archivos
+
 public class AuraParser
 {
     public static void main(String[] args) throws ParseException
     {
+      try
+      {
+        AuraParser parser = new AuraParser(System.in);
+        parser.Input();
+      }
+
 
     }
 }
@@ -17,39 +34,64 @@ public class AuraParser
 PARSER_END(AuraParser)
 //termino de PARSER
 
-/* comienzo de análisis léxico */
+/* comienzo de analisis lexico */
+options{
+  IGNORE_CASE = true; // para que no importe mayusculas o min
+  STATIC = false; // tablas son atributos del parser
+}
+
 //bloque SKIP, se ignoran espacios, tabuladores y retornos
 SKIP: { " " | "\t" | "\r" }
 
 // palabras reservadas
 
-// javacc asigna la prioridad según el orden de aparición en el archivo, además, las etiquetas de los tokens deben seguir las reglas de identificadores (comenzar con una letra o un guión bajo)
+// javacc asigna la prioridad segun el orden de aparicion en el archivo, ademas, las etiquetas de los tokens deben seguir las reglas de identificadores (comenzar con una letra o un guión bajo)
 
 TOKEN: {
-    // palabras reservadas
-    < OPER: "operacion" >
-|   < FIN:  "fin"       >
-|   < USAR: "usar"      >
-|   < ENTR: "entrada"   >
-|   < CLAV: "clave"     >
-|   < SALI: "salida"    >
-|   < ALG: "algoritmo" >
-|   < GUAR: "guardar"   >
-|   < IMPR: "imprimir"  >
-|   < EN: "en"  >
-|   < ARCH: "archivo"  >
-|   < CIFR: "cifrar" >
-|   < DESC: "descifrar" >
+    // palabras reservadas, tokenizacion
 
-    // nombres de algoritmos
-|   < AES: "AES" >
-|   < DES: "DES" >
-|   < T3DES: "3DES" >
-|   < CHACHA20: "ChaCha20" >
-|   < BLOWFISH: "Blowfish" >
+    // acciones  y sus atajo
+    < CIFR  : "cifrar"      | "cif"       >
+|   < DESC  : "descifrar"   | "dcif"      >
+|   < CODI  : "codificar"   | "cod"       >
+|   < DECO  : "decodificar" | "dcod"      >
+|   < PROB  : "probar"                    >
+|   < FIN   : "fin"                       >
+
+    // campos con palabras
+|   < TEXTO : "texto"                     >
+|   < CLAV  : "clave"                     >
+|   < RESUL : "resultado"                 >
+
+
+    // campos siguiendo la formula de cifrado
+|   < LET_M : "m"                         >
+|   < LET_K : "k"                         >
+|   < LET_C : "c"                         >
+
+    // salida
+|   < GUAR  : "guardar"     | "guar"      >
+|   < IMPR  : "imprimir"    | "impr"      >
+|   < EN    : "en"                        >
+|   < ARCH  : "archivo"     | "arch"      >
+
+    // nombres de algoritmos vigentes (actualizado jeje)
+|   < AES128: "aes128"                    >
+|   < AES256: "aes256"                    >
+|   < CHACHA: "chacha20"                  >
+
+    // si es que se va a usar en un ctf
+|   < CESAR : "cesar"                     >
+|   < VIGNR : "vigenere"                  >
+|   < XOR   : "xor"                       >
+|   < BASE64: "base64"                    >
 
     // delimitador principal que reemplaza el punto y coma para facilidad de codificacion para las personas en situación de discapacidad
-|   < NEWL: "\n"        > 
+|   < NEWL  : "\n"                        > 
+
+    // literales
+|   < NUM   : (["0"-"9"])+                >
+|   < STRING: "'" (~["'","\n","\r"])* "'" >
 
     // nombre de identificador o funcion
 |   < ID:   (["a"-"z", "A"-"Z", "_"])(["a"-"z", "A"-"Z", "_", "0"-"9"])* >
@@ -57,11 +99,12 @@ TOKEN: {
 
 // reconocer los comentarios de línea que inician con ; 
 SPECIAL_TOKEN: {
-    < COMM_LIN: ";" (~["\n","\r"])*("\n"|"\r"|"\r\n"|"\n\r") >
+    < COMM_LIN : ";" (~["\n","\r"])*      >   // ya no se come el salto de linea
 }
 
-/*análisis sintáctico */
+/*analisis sintactico */
 
+// declaraciones de variables locales en java
 void Init(): {}
 {
     ""
