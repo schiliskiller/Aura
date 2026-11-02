@@ -9,23 +9,33 @@ public class AuraParser
 PARSER_END(AuraParser)
 
 TOKEN: {
+    // palabras reservadas
     < OPER: "operacion" > |
     < FIN:  "fin"       > |
     < USAR: "usar"      > |
     < ENTR: "entrada"   > |
     < CLAV: "clave"     > |
     < SALI: "salida"    > |
-    < ALGR: "algoritmo" >
+    < ALGR: "algoritmo" > |
+    < GUAR: "guardar"   > |
+    < IMPR: "imprimir"  > |
+    // reemplaza el punto y coma para facilidad de codificacion
+    < NEWL: "\n"        > |
+    // nombre de identificador o funcion
+    < ID:   (["a"-"z", "A"-"Z", "_"])(["a"-"z", "A"-"Z", "_", "0"-"9"])* >
 }
 
 SPECIAL_TOKEN: {
-    < COMM_LN: "//" (~["\n","\r"])*("\n"|"\r"|"\r\n"|"\n\r") > |
-    < COMM_:  >
+    // comentario de linea
+    < COMM_LIN: ";" (~["\n","\r"])*("\n"|"\r"|"\r\n"|"\n\r") >
 }
+
+// excluye caracteres especificos al compilar
+SKIP: { " " | "\t" }
 
 void Init(): {}
 {
-    
+    ""
 }
 
 void Usar(): {Token t;}
@@ -35,6 +45,7 @@ void Usar(): {Token t;}
     }
 }
 
+// aqui se determina el algoritmo de encriptacion (AES, DES, 3DES, ChaCha20, etc.)
 void Func(): {Token t;}
 {
     <OPER>

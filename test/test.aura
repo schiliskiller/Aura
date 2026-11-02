@@ -1,0 +1,9 @@
+operacion cifrado
+  usar algoritmo AES
+  entrada texto_secreto
+  clave mi_llave
+  salida resultado_binario
+fin operacion
+
+imprimir resultado_binario
+guardar
