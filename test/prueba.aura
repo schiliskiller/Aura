@@ -1,0 +1,12 @@
+; codigo de prueba con nueva sintaxis
+
+
+; siguiendo los tokens de la formula matematica
+cif aes256
+m 'textosecreto'
+k 'miclave123'
+c resultado1
+fin cif
+
+impr resultado1
+guar resultado1 en arch 'salida.bin'

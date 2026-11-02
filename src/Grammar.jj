@@ -22,6 +22,8 @@ options{
 /* -------- aqui comienza el PARSER */
 PARSER_BEGIN(AuraParser)
 import java.io.*; // para manejar i/o y archivos
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 public class AuraParser
 {
@@ -33,15 +35,15 @@ public class AuraParser
       return "'" + t.image + "'";
     }
 
-    public static void main(String[] args) throws ParseException
+    public static void main(String[] args) throws Exception
     {
       System.out.println("Aura v1.0");
       System.out.println("Leyendo codigo fuente...");
-
-	// se lee todo y se agrega un salto final para que la ultima instruccion quede terminada
-      String fuente = new String(System.in.readAllBytes(), "UTF-8") + "\n";
       try
       {
+	// se lee todo y se agrega un salto final para que la ultima instruccion quede terminada
+      	String fuente = new String(System.in.readAllBytes(), StandardCharsets.UTF_8) + "\n";
+
         AuraParser parser = new AuraParser(new StringReader(fuente));
         parser.Init(); // evaluación sintactica
 
@@ -201,7 +203,7 @@ void BloqueDecodificar(): {}
 }
 
 //reconocer el algoritmo seleccionado
-void Algoritmo(): {}
+void AlgoritmoCifrado(): {}
 {
   <AES128> | <AES256> | <CHACHA> | <CESAR> | <VIGNR> | <XOR>
 }
@@ -228,15 +230,3 @@ void Valor(): {}
 {
   <STRING> | <ID> | <NUM>
 }
-
-
-//void ComandoImprimir(): {}
-//{
-//  <IMPR> ( <ID> | <STRING> ) (<NEWL>)?
-//}
-
-// guardar resultado en un archivo
-//void ComandoGuardar(): {}
-//{
-//  <GUAR> ( <ID> | <STRING> ) ( <EN> <ARCH> )? ( <STRING> | <ID> )? (<NEWL>)?
-//}
