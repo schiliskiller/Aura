@@ -41,7 +41,7 @@ public class AuraParser
       System.out.println("Leyendo codigo fuente...");
       try
       {
-	// se lee todo y se agrega un salto final para que la ultima instruccion quede terminada
+        // se lee todo y se agrega un salto final para que la ultima instruccion quede terminada
       	String fuente = new String(System.in.readAllBytes(), StandardCharsets.UTF_8) + "\n";
 
         AuraParser parser = new AuraParser(new StringReader(fuente));
@@ -52,9 +52,9 @@ public class AuraParser
       } // mejora de errores para el lector de pantalla
       catch (ParseException e)
       {
-	Token n = e.currentToken.next;
+        Token n = e.currentToken.next;
         // System.out.println("Error Sintactico:" + e.getMessage());
-	System.out.println("Error sintactico en linea " + n.beginLine + ", columna "
+	      System.out.println("Error sintactico en linea " + n.beginLine + ", columna "
                           + n.beginColumn + ": no se esperaba " + describir(n));
       }
       catch (TokenMgrError e)
