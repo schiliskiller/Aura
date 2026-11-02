@@ -25,24 +25,35 @@ import java.io.*; // para manejar i/o y archivos
 
 public class AuraParser
 {
+    // mensaje de error para lector de pantalla
+    static String describir(Token t)
+    {
+      if (t.kind == AuraParserConstants.NEWL) return "salto de linea";
+      if (t.kind == AuraParserConstants.EOF)  return "fin del archivo";
+      return "'" + t.image + "'";
+    }
+
     public static void main(String[] args) throws ParseException
     {
+      System.out.println("Aura v1.0");
+      System.out.println("Leyendo codigo fuente...");
+
+	// se lee todo y se agrega un salto final para que la ultima instruccion quede terminada
+      String fuente = new String(System.in.readAllBytes(), "UTF-8") + "\n";
       try
       {
-        System.out.println("Aura v1.0");
-        System.out.println("Leyendo codigo fuente...");
-        
-
-        AuraParser parser = new AuraParser(System.in);
+        AuraParser parser = new AuraParser(new StringReader(fuente));
         parser.Init(); // evaluación sintactica
 
         System.out.println("Se compilo de forma exitosa sin ningun error :D"); 
-        
-        
-      }
+       
+      } // mejora de errores para el lector de pantalla
       catch (ParseException e)
       {
-        System.out.println("Error Sintactico:" + e.getMessage());
+	Token n = e.currentToken.next;
+        // System.out.println("Error Sintactico:" + e.getMessage());
+	System.out.println("Error sintactico en linea " + n.beginLine + ", columna "
+                          + n.beginColumn + ": no se esperaba " + describir(n));
       }
       catch (TokenMgrError e)
       {
@@ -53,9 +64,8 @@ public class AuraParser
 }
 
 PARSER_END(AuraParser)
-//termino de PARSER
 
-/* comienzo de analisis lexico */
+/*------------- comienzo de analisis lexico */
 
 //bloque SKIP, se ignoran espacios, tabuladores y retornos
 SKIP: { " " | "\t" | "\r" }
@@ -108,7 +118,7 @@ TOKEN: {
 |   < NUM   : (["0"-"9"])+                >
 |   < STRING: "'" (~["'","\n","\r"])* "'" >
 
-    // nombre de identificador o funcion
+    // nombre de identificador o funcion, siempre al final
 |   < ID:   (["a"-"z", "A"-"Z", "_"])(["a"-"z", "A"-"Z", "_", "0"-"9"])* >
 }
 
@@ -120,59 +130,113 @@ SPECIAL_TOKEN: {
 /*---------------- analisis sintactico */
 
 // procesar instrucciones hasta llegar al final del archivo(EOF)
+
+// se puso casi todo en una función para que lo podamos leer mejor
+void Saltos(): {}
+{
+  ( <NEWL> )+
+}
+
 void Init(): {}
 {
-    ( Sentencia() )* <EOF>
+  ( <NEWL> )*
+  ( Sentencia() )*
+  <EOF>
 }
 
 void Sentencia(): {}
 {
     BloqueCifrado() // reconocer bloques de cifrado
   | BloqueDescifrado() // -- bloques de descifrado
+  | BloqueCodificar()// lo mismo pero para codificar y decodificar
+  | BloqueDecodificar()
+  | ComandoProbar()
   | ComandoImprimir()
   | ComandoGuardar()
-  | <NEWL>
 }
 
 // reconocer bloques de cifrado tipo cif aes256 y asi
 void BloqueCifrado(): {}
 {
-  <CIFR> Algoritmo() <NEWL>
-  ( ParametroCifrado() )*
-  <FIN> (<CIFR>)? (<NEWL>)?
+  <CIFR> AlgoritmoCifrado() Saltos()
+  (
+      ( <TEXTO> | <LET_M> ) Valor() Saltos()
+    | ( <CLAV>  | <LET_K> ) Valor() Saltos()
+    | ( <RESUL> | <LET_C> ) <ID>   Saltos()
+  )*
+  <FIN> ( <CIFR> )? Saltos()
 }
 
 // reconocer bloques de descifrado tipo dcif aes256
 void BloqueDescifrado(): {}
 {
-  <DESC> Algoritmo() <NEWL>
-  ( ParametroCifrado() )*
-  <FIN> (<DESC>)? (<NEWL>)?
+  <DESC> AlgoritmoCifrado() Saltos()
+  (
+      ( <TEXTO> | <LET_C> ) Valor() Saltos()
+    | ( <CLAV>  | <LET_K> ) Valor() Saltos()
+    | ( <RESUL> | <LET_M> ) <ID>   Saltos()
+  )*
+  <FIN> ( <DESC> )? Saltos()
+}
+
+// base64 es codificacion, no cifrado
+void BloqueCodificar(): {}
+{
+  <CODI> <BASE64> Saltos()
+  (
+      ( <TEXTO> | <LET_M> ) Valor() Saltos()
+    | ( <RESUL> | <LET_C> ) <ID>   Saltos()
+  )*
+  <FIN> ( <CODI> )? Saltos()
+}
+
+void BloqueDecodificar(): {}
+{
+  <DECO> <BASE64> Saltos()
+  (
+      ( <TEXTO> | <LET_C> ) Valor() Saltos()
+    | ( <RESUL> | <LET_M> ) <ID>   Saltos()
+  )*
+  <FIN> ( <DECO> )? Saltos()
 }
 
 //reconocer el algoritmo seleccionado
 void Algoritmo(): {}
 {
-  <AES128> | <AES256> | <CHACHA> | <CESAR> | <VIGNR> | <XOR> | <BASE64> | <ID>
+  <AES128> | <AES256> | <CHACHA> | <CESAR> | <VIGNR> | <XOR>
 }
 
-// notacion por palabras(texto, clave, resultado) como notacion matematica (m,k,c)
-void ParametroCifrado(): {}
+// fuerza bruta de cesar, probar cesar mensaje
+void ComandoProbar(): {}
 {
-     ( <TEXTO> | <LET_M> ) ( <STRING> | <ID> ) ( <NEWL> )?
-  |  ( <CLAV>  | <LET_K> ) ( <STRING> | <ID> ) ( <NEWL> )?
-  |  ( <RESUL> | <LET_C> ) <ID> ( <NEWL> )?
-  |  <NEWL>
+  <PROB> <CESAR> Valor() Saltos()
 }
 
 // enviar a pantalla o lector de voz
 void ComandoImprimir(): {}
 {
-  <IMPR> ( <ID> | <STRING> ) (<NEWL>)?
+  <IMPR> Valor() Saltos()
 }
 
-// guardar resultado en un archivo
+// guardar en archivo nombre
 void ComandoGuardar(): {}
 {
-  <GUAR> ( <ID> | <STRING> ) ( <EN> <ARCH> )? ( <STRING> | <ID> )? (<NEWL>)?
+  <GUAR> Valor() ( <EN> <ARCH> Valor() )? Saltos()
 }
+
+void Valor(): {}
+{
+  <STRING> | <ID> | <NUM>
+}
+
+
+//void ComandoImprimir(): {}
+//{
+//  <IMPR> ( <ID> | <STRING> ) (<NEWL>)?
+//}
+
+// guardar resultado en un archivo
+//void ComandoGuardar(): {}
+//{
+//  <GUAR> ( <ID> | <STRING> ) ( <EN> <ARCH> )? ( <STRING> | <ID> )? (<NEWL>)?
+//}
