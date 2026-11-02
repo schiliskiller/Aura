@@ -1,0 +1,6 @@
+; error sintactico 2
+CIFRAR aes256 
+TXT textosecreto
+clave miclave123
+resultado resultado1
+FIN

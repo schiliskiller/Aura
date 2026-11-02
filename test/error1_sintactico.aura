@@ -1,0 +1,9 @@
+; codigo de prueba con nueva sintaxis
+; siguiendo los tokens de la formula matematica
+
+; pero ahora con un error jasjasd
+cifradito aes256; 
+mensaje 'textosecreto
+k miclave123
+c resultado1
+fin
