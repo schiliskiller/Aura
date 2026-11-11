@@ -1,0 +1,7 @@
+; reto 4.2 - decodificar los planos
+dcod base64
+texto 'bXNobnt3c2h1dnpfbHpheWxzc2hfdGJseWFsX2hieWh9'
+resultado capa1
+fin
+
+probar cesar capa1

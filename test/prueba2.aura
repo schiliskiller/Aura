@@ -1,0 +1,39 @@
+; aura
+; prueba
+
+cifrar chacha20
+texto 'buenosdias'
+clave 'clavesin'
+resultado variable_resul
+fin
+
+
+;otro
+dcif xor
+resultado variable
+clave 'clavesin'
+texto 'texto'
+fin; es opcional poner fin xor
+
+
+probar cesar cesaraprobar
+imprimir variable
+
+
+; otro ejemplo pero con las variables de formulas
+cod base64
+m 'mensajito'
+c resultado_base64
+fin cod
+
+imprimir resultado_base64
+imprimir variable_resul
+guardar resultado_base64
+
+
+; comprobar que no hay parser todavía jejej
+chacha20 cifrar
+'buenos dias' texto
+'clavesin'
+variable_resul resultado
+fin
