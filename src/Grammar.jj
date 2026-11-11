@@ -21,13 +21,23 @@ options{
 
 /* -------- aqui comienza el PARSER */
 PARSER_BEGIN(AuraParser)
-import java.io.*; // para manejar i/o y archivos
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class AuraParser
 {
-    // mensaje de error para lector de pantalla
+    /*
+      las diapositivas dicen que un compilador no solo debe detectar errores, sino reportar
+      de forma clara al usuario, es por eso que este método traduce identificadores a espaniol
+      para que el usuario entienda que fue lo que falló
+
+      se revisó la documentacion de javacc sobre la clase Token
+      t.kind guarda el tipo de token y se hizo un if sencillo de constantes
+      de AuraParserConstants para checar si es NEWL o EFO antes de imprimir
+      con t.image
+    */
+    
     static String describir(Token t)
     {
       if (t.kind == AuraParserConstants.NEWL) return "salto de linea";
@@ -35,10 +45,15 @@ public class AuraParser
       return "'" + t.image + "'";
     }
 
+    // main
     public static void main(String[] args) throws Exception
     {
+      
+
+
       System.out.println("Aura v1.0");
       System.out.println("Leyendo codigo fuente...");
+
       try
       {
         // se lee todo y se agrega un salto final para que la ultima instruccion quede terminada
@@ -49,9 +64,15 @@ public class AuraParser
 
         System.out.println("Se compilo de forma exitosa sin ningun error :D"); 
        
-      } // mejora de errores para el lector de pantalla
+      }
+      /* manejo de errores para el lector de pantalla,
+         segun las diapositivas, el compilador debe detectar, reportar(con línea y columba), recuperar
+         sin colapsar  y mostrar un informe
+         */
       catch (ParseException e)
       {
+        // errores sintacticos
+
         Token n = e.currentToken.next;
         // System.out.println("Error Sintactico:" + e.getMessage());
 	      System.out.println("Error sintactico en linea " + n.beginLine + ", columna "
@@ -59,6 +80,7 @@ public class AuraParser
       }
       catch (TokenMgrError e)
       {
+        // errores lexicos 
         System.out.println("Error Lexico:" + e.getMessage()); 
       }
 
@@ -70,7 +92,13 @@ PARSER_END(AuraParser)
 /*------------- comienzo de analisis lexico */
 
 //bloque SKIP, se ignoran espacios, tabuladores y retornos
-SKIP: { " " | "\t" | "\r" }
+
+<DEFAULT> SKIP:
+{
+  " "   // espacio
+| "\t"  // tabulador
+| "\r"  // retorno de carro
+}
 
 // palabras reservadas
 
@@ -85,6 +113,8 @@ TOKEN: {
 |   < CODI  : "codificar"   | "cod"       >
 |   < DECO  : "decodificar" | "dcod"      >
 |   < PROB  : "probar"                    >
+|   < HUELLA: "huella"      | "h"         >
+|   < IDENT : "identificar" | "ident"     >
 |   < FIN   : "fin"                       >
 
     // campos con palabras
@@ -112,11 +142,14 @@ TOKEN: {
 |   < VIGNR : "vigenere"                  >
 |   < XOR   : "xor"                       >
 |   < BASE64: "base64"                    >
+|   < SHA256: "sha256"                    >
+|   < SHA512: "sha512"                    >
+|   < SHA3  : "sha3"                      >
 
     // delimitador principal que reemplaza el punto y coma para facilidad de codificacion para las personas en situación de discapacidad
 |   < NEWL  : "\n"                        > 
 
-    // literales
+    // literales, expresiones regulares sin etiquetas auxiliares
 |   < NUM   : (["0"-"9"])+                >
 |   < STRING: "'" (~["'","\n","\r"])* "'" >
 
@@ -129,34 +162,39 @@ SPECIAL_TOKEN: {
     < COMM_LIN : ";" (~["\n","\r"])*      >   // ya no se come el salto de linea
 }
 
-/*---------------- analisis sintactico */
-
+/*---------------- analisis sintactico (gramática/parser) */
+// https://www.scribd.com/document/260675669/javaccparse2
 // procesar instrucciones hasta llegar al final del archivo(EOF)
+// aqui van las GLC
 
-// se puso casi todo en una función para que lo podamos leer mejor
-void Saltos(): {}
-{
-  ( <NEWL> )+
-}
-
-void Init(): {}
-{
+// inicio del arbol, es S
+void Init(): {} // No terminales
+{ 
   ( <NEWL> )*
   ( Sentencia() )*
   <EOF>
 }
 
-void Sentencia(): {}
+// para que lo podamos leer mejor
+void Saltos(): {}
+{
+  ( <NEWL> )+
+}
+
+void Sentencia(): {} // No terminales
 {
     BloqueCifrado() // reconocer bloques de cifrado
   | BloqueDescifrado() // -- bloques de descifrado
   | BloqueCodificar()// lo mismo pero para codificar y decodificar
   | BloqueDecodificar()
+  | BloqueHuella() // crear hash/huella
+  | ComandoIdentificar() //identificar hash/huella
   | ComandoProbar()
   | ComandoImprimir()
   | ComandoGuardar()
 }
 
+// No terminales
 // reconocer bloques de cifrado tipo cif aes256 y asi
 void BloqueCifrado(): {}
 {
@@ -200,6 +238,27 @@ void BloqueDecodificar(): {}
     | ( <RESUL> | <LET_M> ) <ID>   Saltos()
   )*
   <FIN> ( <DECO> )? Saltos()
+}
+
+void BloqueHuella(): {}
+{
+  <HUELLA> AlgoritmoHash() Saltos()
+  (
+      ( <TEXTO> | <LET_M> ) Valor() Saltos()
+    | ( <RESUL> | <LET_C> ) <ID>    Saltos()
+  )*
+  <FIN> ( <HUELLA> )? Saltos()
+}
+
+void AlgoritmoHash(): {}
+{
+  <SHA256> | <SHA512> | <SHA3>
+}
+
+// identificar el algoritmo
+void ComandoIdentificar(): {}
+{
+  <IDENT> Valor() Saltos()
 }
 
 //reconocer el algoritmo seleccionado
