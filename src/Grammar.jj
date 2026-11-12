@@ -57,9 +57,12 @@ public class AuraParser
       if(args.length > 0)
       {
         archivo_seleccionado = new File(args[0]);
+        System.out.println("Uso por terminal...");
       }
       else
       {
+        // por si se va a ocupar el GUI, se abrira el selector de archivos
+        System.out.println("Uso por GUI");
         try
         {
           // basado desde Guia de Uso: El Proyecto CompiladorGO proporcionado con el manual
@@ -76,26 +79,34 @@ public class AuraParser
           else
           {
             System.out.println("Operacion cancelada: no se selecciono ningun archivo");
+            System.out.println("Saliendo de Aura....");
             return;
           }
         }
+        // fin intentar de abrir archivo desde gui jsjsj
         catch(java.awt.HeadlessException e)
         {
-          System.err.println("Uso por terminal");
+          System.err.println(e);
           return;
         }
-        System.out.println("uso por terminal, debug ");
-
-        // si no se encontro el archivo
-        if(archivo_seleccionado == null || !archivo_seleccionado.exists())
-        {
-          System.err.println("Error: no se encontro el archivo");
-          return;
-        }
-
+      }
+        // abrir el archivo
         String fileName = archivo_seleccionado.getAbsolutePath();
         System.out.println("Aura v1.0");
         System.out.println("Archivo: " + fileName + "\n");
+
+        String[] extension = fileName.split("\\.");
+
+        if(!extension[1].equals("aura"))
+        {
+         // System.out.println(extension[1]);
+          System.out.println("Error: el archivo no es un .aura o un .txt");
+          System.out.println("Saliendo de Aura...");
+          return;
+
+        }
+
+        // si todo sale bien, ahora si compila jejej
         System.out.println("Leyendo codigo fuente...");
 
         // se lee todo y se agrega un salto final para que la ultima instruccion quede terminada
@@ -149,7 +160,6 @@ public class AuraParser
          // errores lexicos 
          System.out.println("Error Lexico:" + e.getMessage()); 
         }
-      }
     }
 }
 
@@ -213,7 +223,8 @@ TOKEN: {
 |   < SHA3  : "sha3"                      >
 
     // delimitador principal que reemplaza el punto y coma para facilidad de codificacion para las personas en situación de discapacidad
-|   < NEWL  : "\n"                        > 
+|   < NEWL  : "\n"                        >
+|   < PUNTO : "."                         >
 
     // literales, expresiones regulares sin etiquetas auxiliares
 |   < NUM   : (["0"-"9"])+                >
@@ -238,6 +249,7 @@ void Init(): {} // No terminales
 { 
   ( <NEWL> )*
   ( Sentencia() )*
+  <PUNTO>
   <EOF>
 }
 
