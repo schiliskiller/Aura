@@ -110,7 +110,7 @@ public class AuraParser
         System.out.println("Leyendo codigo fuente...");
 
         // se lee todo y se agrega un salto final para que la ultima instruccion quede terminada
-        String fuente = new String(Files.readAllBytes(archivo_seleccionado.toPath()), StandardCharsets.UTF_8) + "\n";
+        String fuente = new String(Files.readAllBytes(archivo_seleccionado.toPath()), StandardCharsets.UTF_8);
 
         try
         {
@@ -124,15 +124,14 @@ public class AuraParser
             // adaptado para lectura por voz y línea Braille
             System.out.println("Token " + count + ": " + describir(token) + " en Linea " + token.beginLine + ", Columna " + token.beginColumn + ".");
             count++;
-         }
+          }
 
           // seimprime el fin de archivo para accesibilidad
           System.out.println("Token " + count + ": " + describir(token) + " en Linea " + token.beginLine + ", Columna " + token.beginColumn + ".");
 
           // analisis sintactico:
-          Reader readerSintactico = new BufferedReader(new FileReader(fileName));
           // instanciar parser generado por javacc
-          AuraParser parser = new AuraParser(readerSintactico);
+          AuraParser parser = new AuraParser(new StringReader(fuente));
           parser.Init(); // evaluación sintactica
 
           System.out.println("Se compilo de forma exitosa sin ningun error :D"); 
@@ -141,11 +140,7 @@ public class AuraParser
         /* manejo de errores para el lector de pantalla,
            segun las diapositivas, el compilador debe detectar, reportar(con línea y columba), recuperar
            sin colapsar  y mostrar un informe
-        */
-        catch(FileNotFoundException e)
-        {
-          System.err.println("Error: no se encontro el archivo seleccionado");
-        }
+        */        
         catch (ParseException e)
         {
          // errores sintacticos
@@ -250,6 +245,7 @@ void Init(): {} // No terminales
   ( <NEWL> )*
   ( Sentencia() )*
   <PUNTO>
+  ( <NEWL> )*
   <EOF>
 }
 
