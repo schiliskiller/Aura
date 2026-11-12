@@ -23,7 +23,10 @@ options{
 PARSER_BEGIN(AuraParser)
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.*;
+import javax.swing.JFileChooser;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class AuraParser
 {
@@ -48,42 +51,105 @@ public class AuraParser
     // main
     public static void main(String[] args) throws Exception
     {
-      
+      File archivo_seleccionado= null;
 
-
-      System.out.println("Aura v1.0");
-      System.out.println("Leyendo codigo fuente...");
-
-      try
+      //para hacer seleccion del archivo en terminal o gui
+      if(args.length > 0)
       {
+        archivo_seleccionado = new File(args[0]);
+      }
+      else
+      {
+        try
+        {
+          // basado desde Guia de Uso: El Proyecto CompiladorGO proporcionado con el manual
+
+          JFileChooser fileChooser = new JFileChooser();
+          FileNameExtensionFilter filter = new FileNameExtensionFilter("Archivos Aura (*.aura, *.txt)", "aura", "txt");
+          fileChooser.setFileFilter(filter);
+
+          int returnValue = fileChooser.showOpenDialog(null);
+          if (returnValue == JFileChooser.APPROVE_OPTION)
+          {
+            archivo_seleccionado = fileChooser.getSelectedFile();
+          }
+          else
+          {
+            System.out.println("Operacion cancelada: no se selecciono ningun archivo");
+            return;
+          }
+        }
+        catch(java.awt.HeadlessException e)
+        {
+          System.err.println("Uso por terminal");
+          return;
+        }
+        System.out.println("uso por terminal, debug ");
+
+        // si no se encontro el archivo
+        if(archivo_seleccionado == null || !archivo_seleccionado.exists())
+        {
+          System.err.println("Error: no se encontro el archivo");
+          return;
+        }
+
+        String fileName = archivo_seleccionado.getAbsolutePath();
+        System.out.println("Aura v1.0");
+        System.out.println("Archivo: " + fileName + "\n");
+        System.out.println("Leyendo codigo fuente...");
+
         // se lee todo y se agrega un salto final para que la ultima instruccion quede terminada
-      	String fuente = new String(System.in.readAllBytes(), StandardCharsets.UTF_8) + "\n";
+        String fuente = new String(Files.readAllBytes(archivo_seleccionado.toPath()), StandardCharsets.UTF_8) + "\n";
 
-        AuraParser parser = new AuraParser(new StringReader(fuente));
-        parser.Init(); // evaluación sintactica
+        try
+        {
+          // analisis lexico
+          AuraParserTokenManager lexer = new AuraParserTokenManager(new SimpleCharStream(new StringReader(fuente)));
+          Token token;
+          int count = 1;
 
-        System.out.println("Se compilo de forma exitosa sin ningun error :D"); 
+          while ((token = lexer.getNextToken()).kind != AuraParserConstants.EOF)
+          {
+            // adaptado para lectura por voz y línea Braille
+            System.out.println("Token " + count + ": " + describir(token) + " en Linea " + token.beginLine + ", Columna " + token.beginColumn + ".");
+            count++;
+         }
+
+          // seimprime el fin de archivo para accesibilidad
+          System.out.println("Token " + count + ": " + describir(token) + " en Linea " + token.beginLine + ", Columna " + token.beginColumn + ".");
+
+          // analisis sintactico:
+          Reader readerSintactico = new BufferedReader(new FileReader(fileName));
+          // instanciar parser generado por javacc
+          AuraParser parser = new AuraParser(readerSintactico);
+          parser.Init(); // evaluación sintactica
+
+          System.out.println("Se compilo de forma exitosa sin ningun error :D"); 
        
-      }
-      /* manejo de errores para el lector de pantalla,
-         segun las diapositivas, el compilador debe detectar, reportar(con línea y columba), recuperar
-         sin colapsar  y mostrar un informe
-         */
-      catch (ParseException e)
-      {
-        // errores sintacticos
+        }
+        /* manejo de errores para el lector de pantalla,
+           segun las diapositivas, el compilador debe detectar, reportar(con línea y columba), recuperar
+           sin colapsar  y mostrar un informe
+        */
+        catch(FileNotFoundException e)
+        {
+          System.err.println("Error: no se encontro el archivo seleccionado");
+        }
+        catch (ParseException e)
+        {
+         // errores sintacticos
 
-        Token n = e.currentToken.next;
-        // System.out.println("Error Sintactico:" + e.getMessage());
-	      System.out.println("Error sintactico en linea " + n.beginLine + ", columna "
+         Token n = e.currentToken.next;
+         // System.out.println("Error Sintactico:" + e.getMessage());
+	       System.out.println("Error sintactico en linea " + n.beginLine + ", columna "
                           + n.beginColumn + ": no se esperaba " + describir(n));
+        }
+        catch (TokenMgrError e)
+        {
+         // errores lexicos 
+         System.out.println("Error Lexico:" + e.getMessage()); 
+        }
       }
-      catch (TokenMgrError e)
-      {
-        // errores lexicos 
-        System.out.println("Error Lexico:" + e.getMessage()); 
-      }
-
     }
 }
 
