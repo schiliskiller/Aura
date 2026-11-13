@@ -6,7 +6,7 @@
 
 
 /*
-otras referencias:
+otras referenciase supoe que el avanzado 3 ya esta en camino y todo bien, hazme elcaptulo 5 yo el 4 plox osea que debo de hacer,e y dettordar el vances:
 https://javacc.github.io/javacc/tutorials/examples.html
 https://cs.lmu.edu/~ray/notes/javacc/
 https://javacc.github.io/javacc/tutorials/examples.html#javacc-example-1
@@ -30,6 +30,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class AuraParser
 {
+    int errores = 0;
     /*
       las diapositivas dicen que un compilador no solo debe detectar errores, sino reportar
       de forma clara al usuario, es por eso que este método traduce identificadores a espaniol
@@ -45,8 +46,22 @@ public class AuraParser
     {
       if (t.kind == AuraParserConstants.NEWL) return "salto de linea";
       if (t.kind == AuraParserConstants.EOF)  return "fin del archivo";
+      if (t.kind == AuraParserConstants.ERROR_CHAR) return "caracter no valido '" + t.image + "'";
       return "'" + t.image + "'";
     }
+   
+    void error_skipto(ParseException e)
+    {
+      errores++;
+      Token n = e.currentToken.next;
+      System.out.println("Error en linea " + n.beginLine + ", columna "
+                        + n.beginColumn + ": no se esperaba " + describir(n));
+      Token t;
+      do {
+        t = getNextToken();
+      } while (t.kind != NEWL && t.kind != EOF);   // EOF evita ciclo infinito
+    }
+
 
     // main
     public static void main(String[] args) throws Exception
@@ -95,9 +110,9 @@ public class AuraParser
         System.out.println("Aura v1.0");
         System.out.println("Archivo: " + fileName + "\n");
 
-        String[] extension = fileName.split("\\.");
-
-        if(!extension[1].equals("aura"))
+        //String[] extension = fileName.split("\\.");
+        String extension = fileName.substring(fileName.lastIndexOf('.') + 1);
+        if(!extension.equals("aura") && !extension.equals("txt"))
         {
          // System.out.println(extension[1]);
           System.out.println("Error: el archivo no es un .aura o un .txt");
@@ -132,29 +147,32 @@ public class AuraParser
           // analisis sintactico:
           // instanciar parser generado por javacc
           AuraParser parser = new AuraParser(new StringReader(fuente));
-          parser.Init(); // evaluación sintactica
+          //parser.Init(); // evaluación sintactica
+          try { parser.Init(); } catch (ParseException e) { parser.error_skipto(e); }
 
-          System.out.println("Se compilo de forma exitosa sin ningun error :D"); 
-       
+          //System.out.println("Se compilo de forma exitosa sin ningun error :D"); 
+         
+           System.out.println(parser.errores == 0 ? "Se compilo de forma exitosa sin ningun error :D" : "Compilacion terminada con " + parser.errores + " error(es)"); 
         }
         /* manejo de errores para el lector de pantalla,
            segun las diapositivas, el compilador debe detectar, reportar(con línea y columba), recuperar
            sin colapsar  y mostrar un informe
-        */        
+        
         catch (ParseException e)
         {
          // errores sintacticos
 
          Token n = e.currentToken.next;
          // System.out.println("Error Sintactico:" + e.getMessage());
-	       System.out.println("Error sintactico en linea " + n.beginLine + ", columna "
+	       System.out.println("Error en linea " + n.beginLine + ", columna "
                           + n.beginColumn + ": no se esperaba " + describir(n));
         }
+        */
         catch (TokenMgrError e)
         {
          // errores lexicos 
-         System.out.println("Error Lexico:" + e.getMessage()); 
-        }
+         System.out.println("Error:" + e.getMessage()); 
+        }        
     }
 }
 
@@ -227,6 +245,7 @@ TOKEN: {
 
     // nombre de identificador o funcion, siempre al final
 |   < ID:   (["a"-"z", "A"-"Z", "_"])(["a"-"z", "A"-"Z", "_", "0"-"9"])* >
+|   < ERROR_CHAR : ~[] >
 }
 
 // reconocer los comentarios de línea que inician con ; 
@@ -240,13 +259,16 @@ SPECIAL_TOKEN: {
 // aqui van las GLC
 
 // inicio del arbol, es S
-void Init(): {} // No terminales
-{ 
+
+// manejo de errores basado en la docu oficial
+// https://javacc.github.io/javacc/tutorials/error-handling.html y https://sources.debian.org/src/javacc/5.0-4/examples/JavaGrammars/OPTIMIZING?pow_referer=
+void Init(): {}
+{
   ( <NEWL> )*
-  ( Sentencia() )*
-  <PUNTO>
-  ( <NEWL> )*
-  <EOF>
+  ( LOOKAHEAD({ getToken(1).kind != PUNTO && getToken(1).kind != EOF })
+    try { Sentencia() } catch (ParseException e) { error_skipto(e); }
+  )*
+  <PUNTO> ( <NEWL> )* <EOF>
 }
 
 // para que lo podamos leer mejor
@@ -324,6 +346,7 @@ void BloqueHuella(): {}
   <FIN> ( <HUELLA> )? Saltos()
 }
 
+//forma normal de Chomsky
 void AlgoritmoHash(): {}
 {
   <SHA256> | <SHA512> | <SHA3>
@@ -348,6 +371,7 @@ void ComandoProbar(): {}
 }
 
 // enviar a pantalla o lector de voz
+//forma normal de Chomsky
 void ComandoImprimir(): {}
 {
   <IMPR> Valor() Saltos()
@@ -359,6 +383,7 @@ void ComandoGuardar(): {}
   <GUAR> Valor() ( <EN> <ARCH> Valor() )? Saltos()
 }
 
+//forma normal de Chomsky
 void Valor(): {}
 {
   <STRING> | <ID> | <NUM>
